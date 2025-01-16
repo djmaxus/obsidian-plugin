@@ -13,7 +13,7 @@ export default {
   input: 'index.js',
   output: {
     file: 'main.js',
-    sourcemap: 'inline',
+    sourcemap: false,
     format: 'cjs',
     exports: 'default',
     banner,

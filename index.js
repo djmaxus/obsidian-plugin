@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
-import rustPlugin from "./pkg/obsidian_rust_plugin_bg.wasm";
-import * as plugin from "./pkg/obsidian_rust_plugin.js";
+import rustPlugin from "./pkg/obsidian_plugin_gtd_bg.wasm";
+import * as plugin from "./pkg/obsidian_plugin_gtd.js";
 
 export default class RustPlugin extends Plugin {
 	async onload() {
