@@ -1,4 +1,4 @@
-mod gtd;
+mod tasks;
 mod obsidian;
 
 use js_sys::JsString;
@@ -48,7 +48,7 @@ impl ExampleCommand {
     pub fn editorCallback(&self, editor: obsidian::Editor, view: obsidian::MarkdownView) {
         let selection = editor.getSelection();
         let selection: String = selection.into();
-        if let Some(task) = gtd::Task::from_markdown(&selection) {
+        if let Some(task) = tasks::Task::from_markdown(&selection) {
             let json = serde_json::to_string_pretty(&task).unwrap();
             obsidian::Notice::new(&json);
         } else {

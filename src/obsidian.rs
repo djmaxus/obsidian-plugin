@@ -1,3 +1,6 @@
+//! This module contains the bindings to the Obsidian API.
+//! https://github.com/obsidianmd/obsidian-api
+
 use js_sys::JsString;
 use wasm_bindgen::prelude::*;
 
@@ -7,12 +10,18 @@ extern "C" {
 
     #[wasm_bindgen(structural, method)]
     pub fn addCommand(this: &Plugin, command: JsValue);
+}
 
+#[wasm_bindgen(module = "obsidian")]
+extern "C" {
     pub type Notice;
 
     #[wasm_bindgen(constructor)]
     pub fn new(message: &str) -> Notice;
+}
 
+#[wasm_bindgen(module = "obsidian")]
+extern "C" {
     pub type Editor;
 
     #[wasm_bindgen(structural, method)]
@@ -20,6 +29,12 @@ extern "C" {
 
     #[wasm_bindgen(structural, method)]
     pub fn getSelection(this: &Editor) -> JsString;
+}
 
+#[wasm_bindgen(module = "obsidian")]
+extern "C" {
     pub type MarkdownView;
+
+    #[wasm_bindgen(structural, method)]
+    pub fn getEditor(this: &MarkdownView) -> Editor;
 }
