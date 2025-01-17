@@ -1,6 +1,7 @@
 {
 	"main": "main.js",
 	"type": "module",
+	"private": true,
 	"scripts": {
 		"build": "npm i && wasm-pack build --target web && rollup --config rollup.config.js"
 	},

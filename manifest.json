@@ -1,0 +1,11 @@
+{
+    "id": "all-tasks-sorted",
+    "name": "All your tasks. Sorted.",
+    "version": "0.0.1",
+    "minAppVersion": "1.7.7",
+    "description": "All your tasks in a single Markdown file. Sorted. Inspired by GTDⓇ approach",
+    "author": "Max Elizarev",
+    "authorUrl": "https://djmaxus.github.io/",
+    "fundingUrl": "https://buymeacoffee.com/djmaxus",
+    "isDesktopOnly": false
+}
