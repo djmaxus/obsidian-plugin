@@ -50,7 +50,7 @@ command!(Echo, "echo");
 #[wasm_bindgen]
 impl Echo {
     pub fn callback(&self) {
-        obsidian::Notice::new("dmaxus/obsidian-plugin");
+        obsidian::Notice::new("dmaxus/obsidian-plugin".into());
     }
 }
 
@@ -64,9 +64,9 @@ impl ParseTask {
         let selection: String = selection.into();
         if let Some(task) = tasks::Task::from_markdown(&selection) {
             let json = serde_json::to_string_pretty(&task).unwrap();
-            obsidian::Notice::new(&json);
+            obsidian::Notice::new(json.into());
         } else {
-            obsidian::Notice::new("Not a task");
+            obsidian::Notice::new("Not a task".into());
         }
     }
 }
@@ -82,15 +82,15 @@ impl ParseFile {
     ) {
         let file = markdown_view.file();
         let vault = markdown_view.app().vault();
-        let promise = vault.read(file);
-
-        let read_result = wasm_bindgen_futures::JsFuture::from(promise).await;
-
-        if let Err(err) = read_result {
-            obsidian::Notice::new(&format!("error: {err:?}"));
-            return;
-        }
-        let string = JsString::from(read_result.unwrap());
-        obsidian::Notice::new(&string.as_string().unwrap());
+        let content = read_file(&vault, file).await;
+        obsidian::Notice::new(content);
     }
+}
+
+async fn read_file(vault: &obsidian::Vault, file: obsidian::TFile) -> JsString {
+    let promise = vault.read(file);
+
+    let read_result = wasm_bindgen_futures::JsFuture::from(promise).await;
+
+    JsString::from(read_result.unwrap())
 }

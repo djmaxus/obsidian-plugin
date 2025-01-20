@@ -17,7 +17,7 @@ extern "C" {
     pub type Notice;
 
     #[wasm_bindgen(constructor)]
-    pub fn new(message: &str) -> Notice;
+    pub fn new(message: JsString) -> Notice;
 }
 
 #[wasm_bindgen(module = "obsidian")]
