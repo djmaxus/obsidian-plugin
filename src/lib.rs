@@ -14,4 +14,5 @@ pub fn onload(plugin: &obsidian::Plugin) {
     add_command!(Echo);
     add_command!(ParseTask);
     add_command!(ParseFile);
+    add_command!(Yoink);
 }

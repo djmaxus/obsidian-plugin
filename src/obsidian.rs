@@ -51,4 +51,14 @@ extern "C" {
 
     #[wasm_bindgen(method)]
     pub fn read(this: &Vault, file: TFile) -> js_sys::Promise;
+
+    pub type DataWriteOptions;
+
+    #[wasm_bindgen(method)]
+    pub fn modify(
+        this: &Vault,
+        file: TFile,
+        data: JsString,
+        options: Option<DataWriteOptions>,
+    ) -> js_sys::Promise;
 }
