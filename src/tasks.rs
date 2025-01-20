@@ -1,74 +1,80 @@
 use pulldown_cmark::Options;
 #[cfg(test)]
 mod tests {
-
     use super::*;
+
     #[test]
-    fn it_works() {
-        test()
+    fn from_todo_file() {
+        let input = include_str!("../TODO.md");
+        in_n_out(&input);
     }
 
     #[test]
-    fn from_markdown() {
-        let string = "* [ ] Sign the timesheet";
+    fn from_task() {
+        let input = "* [ ] Sign the timesheet";
+        in_n_out(input);
+    }
+
+    fn in_n_out(input: &str) {
         let events =
-            pulldown_cmark::Parser::new_ext(string, Options::ENABLE_TASKLISTS).collect::<Vec<_>>();
+            pulldown_cmark::Parser::new_ext(input, Options::ENABLE_TASKLISTS).collect::<Vec<_>>();
         println!("{:#?}", events);
         let mut back = String::new();
         pulldown_cmark_to_cmark::cmark(events.into_iter(), &mut back).unwrap();
         println!("{}", back);
+    }
+
+    #[test]
+    fn test() {
+        let board = Board::new()
+            .add(Task::new("Sign the timesheet").unchecked())
+            .add(Task::new("Learn how to use pulldown-cmark").checked())
+            .add(Task::new("Push the current state to origin").checked())
+            .add(Task::new("Make it read a flie from inside Obsidian"));
+
+        let json = serde_json::to_string_pretty(&board).unwrap();
+        println!("Serde_json: {json}");
+
+        let events: Vec<Event> = board.clone().into();
+
+        let markdown = events_to_markdown(events);
+        println!("Markdown:\n{markdown}");
+
+        let board = board.log_checked();
+        let json = serde_json::to_string_pretty(&board).unwrap();
+        println!("Serde_json: {json}");
+
+        let events: Vec<Event> = board.into();
+
+        let markdown = events_to_markdown(events);
+        println!("Markdown:\n{markdown}");
     }
 }
 
 use itertools::{Either, Itertools};
 use pulldown_cmark::{CowStr, Event, Tag, TagEnd};
 
-impl<'a> From<&'a Task> for Vec<Event<'a>> {
-    fn from(task: &'a Task) -> Self {
-        let name = &task.name;
+impl<'a> From<Task> for Vec<Event<'a>> {
+    fn from(task: Task) -> Self {
+        let name = task.name;
         vec![
             Event::Start(Tag::Item),
             Event::TaskListMarker(task.done),
-            Event::Text(CowStr::Borrowed(name)),
+            Event::Text(CowStr::from(name)),
             Event::End(TagEnd::Item),
         ]
     }
 }
 
-impl<'a> From<&'a Board> for Vec<Event<'a>> {
-    fn from(board: &'a Board) -> Self {
+impl<'a> From<Board> for Vec<Event<'a>> {
+    fn from(board: Board) -> Self {
         let mut events = vec![Event::Start(Tag::List(None))];
-        for task in &board.tasks {
+        for task in board.tasks {
             events.extend_from_slice(&Vec::<Event<'a>>::from(task));
         }
         events.push(Event::End(TagEnd::List(false)));
         events
     }
-}
-
-pub(crate) fn test() {
-    let board = Board::new()
-        .add(Task::new("Sign the timesheet").unchecked())
-        .add(Task::new("Learn how to use pulldown-cmark").checked())
-        .add(Task::new("Push the current state to origin").checked())
-        .add(Task::new("Make it read a flie from inside Obsidian"));
-
-    let json = serde_json::to_string_pretty(&board).unwrap();
-    println!("Serde_json: {json}");
-
-    let events: Vec<Event> = (&board).into();
-
-    let markdown = events_to_markdown(events);
-    println!("Markdown:\n{markdown}");
-
-    let board = board.log_checked();
-    let json = serde_json::to_string_pretty(&board).unwrap();
-    println!("Serde_json: {json}");
-
-    let events: Vec<Event> = (&board).into();
-
-    let markdown = events_to_markdown(events);
-    println!("Markdown:\n{markdown}");
 }
 
 pub(crate) fn events_to_markdown<'e, I: IntoIterator<Item = Event<'e>>>(events: I) -> String {
@@ -82,7 +88,7 @@ pub(crate) fn events_to_markdown<'e, I: IntoIterator<Item = Event<'e>>>(events: 
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct Board {
     tasks: Vec<Task>,
     log: Vec<Task>,
@@ -111,7 +117,7 @@ impl Board {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Task {
     name: String,
     done: bool,

@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
-import rustPlugin from "./pkg/all_tasks_sorted_bg.wasm";
-import * as plugin from "./pkg/all_tasks_sorted.js";
+import rustPlugin from "./pkg/obsidian_plugin_bg.wasm";
+import * as plugin from "./pkg/obsidian_plugin.js";
 
 export default class RustPlugin extends Plugin {
 	async onload() {

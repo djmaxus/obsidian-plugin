@@ -1,5 +1,5 @@
 [package]
-name = "all-tasks-sorted"
+name = "obsidian-plugin"
 edition = "2021"
 publish = false
 
