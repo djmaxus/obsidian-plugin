@@ -70,3 +70,27 @@ impl ParseTask {
         }
     }
 }
+
+command!(ParseFile, "parse current file");
+#[wasm_bindgen]
+impl ParseFile {
+    #[wasm_bindgen(js_name = editorCallback)]
+    pub async fn editor_callback(
+        &self,
+        _: obsidian::Editor,
+        markdown_view: obsidian::MarkdownView,
+    ) {
+        let file = markdown_view.file();
+        let vault = markdown_view.app().vault();
+        let promise = vault.read(file);
+
+        let read_result = wasm_bindgen_futures::JsFuture::from(promise).await;
+
+        if let Err(err) = read_result {
+            obsidian::Notice::new(&format!("error: {err:?}"));
+            return;
+        }
+        let string = JsString::from(read_result.unwrap());
+        obsidian::Notice::new(&string.as_string().unwrap());
+    }
+}

@@ -35,6 +35,20 @@ extern "C" {
 extern "C" {
     pub type MarkdownView;
 
-    #[wasm_bindgen(structural, method)]
-    pub fn getEditor(this: &MarkdownView) -> Editor;
+    #[wasm_bindgen(method, getter)]
+    pub fn file(this: &MarkdownView) -> TFile;
+
+    #[wasm_bindgen(method, getter)]
+    pub fn app(this: &MarkdownView) -> App;
+
+    #[wasm_bindgen(method, getter)]
+    pub fn vault(this: &App) -> Vault;
+    pub type Vault;
+
+    pub type App;
+
+    pub type TFile;
+
+    #[wasm_bindgen(method)]
+    pub fn read(this: &Vault, file: TFile) -> js_sys::Promise;
 }
