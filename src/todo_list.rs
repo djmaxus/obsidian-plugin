@@ -1,6 +1,13 @@
+use combine::{
+    any,
+    parser::{sequence, token::Token},
+    token, EasyParser, Parser,
+};
 use pulldown_cmark::Options;
 #[cfg(test)]
 mod tests {
+    use combine::satisfy;
+
     use super::*;
 
     #[test]
@@ -49,6 +56,26 @@ mod tests {
         let markdown = events_to_markdown(events);
         println!("Markdown:\n{markdown}");
     }
+
+    #[test]
+    fn combinator() {
+        let input = [
+            Event::Start(Tag::Item),
+            Event::TaskListMarker(false),
+            Event::Text(CowStr::from("Sign the timesheet")),
+            Event::End(TagEnd::Item),
+        ];
+        let parsed = token(Event::Start(Tag::Item))
+            .with(satisfy(|event| matches!(event, Event::TaskListMarker(_))).map(|event| {
+                if let Event::TaskListMarker(done) = event {
+                    done
+                } else {
+                    panic!("Unexpected event in task done");
+                }
+            }))
+            .parse(input.as_slice());
+        println!("{:?}", parsed);
+    }
 }
 
 use itertools::{Either, Itertools};
@@ -59,7 +86,7 @@ impl<'a> From<Task> for Vec<Event<'a>> {
         let name = task.name;
         vec![
             Event::Start(Tag::Item),
-            Event::TaskListMarker(task.done),
+            Event::TaskListMarker(task.checked),
             Event::Text(CowStr::from(name)),
             Event::End(TagEnd::Item),
         ]
@@ -106,7 +133,7 @@ impl Board {
 
     pub fn log_checked(self) -> Self {
         let (tasks, mut log): (Vec<_>, Vec<_>) = self.tasks.into_iter().partition_map(|task| {
-            if task.done {
+            if task.checked {
                 Either::Right(task)
             } else {
                 Either::Left(task)
@@ -120,24 +147,24 @@ impl Board {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Task {
     name: String,
-    done: bool,
+    checked: bool,
 }
 
 impl Task {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_owned(),
-            done: false,
+            checked: false,
         }
     }
 
     pub fn checked(mut self) -> Self {
-        self.done = true;
+        self.checked = true;
         self
     }
 
     pub fn unchecked(mut self) -> Self {
-        self.done = false;
+        self.checked = false;
         self
     }
 
@@ -173,7 +200,12 @@ impl Task {
             } else {
                 panic!("Unexpected event in task done");
             };
-            Self { name, done }
+            Self {
+                name,
+                checked: done,
+            }
         })
     }
 }
+
+fn parse<'a>(src: pulldown_cmark::Parser<'a>) {}

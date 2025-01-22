@@ -1,8 +1,17 @@
-use crate::obsidian;
-use crate::tasks;
+use std::convert::identity;
+
+use crate::obsidian::{self, TFile, Vault};
 use js_sys::JsString;
+use pulldown_cmark::{Event, Options, Parser};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
+
+trait ErgoInto: Sized {
+    fn ergo_into<I: From<Self>>(self) -> I {
+        I::from(self)
+    }
+}
+impl<F> ErgoInto for F {}
 
 macro_rules! command {
     ($struct_name:ident,$name:expr) => {
@@ -46,9 +55,17 @@ macro_rules! command {
     };
 }
 
-command!(Echo, "echo");
-command!(ParseTask, "parse task from selection");
-command!(ParseFile, "parse current file");
+macro_rules! callback {
+    ($struct_name:ident,$body:block) => {
+        #[wasm_bindgen]
+        impl $struct_name {
+            #[wasm_bindgen(js_name = editorCallback)]
+            pub async fn callback(&self) {
+                $body
+            }
+        }
+    };
+}
 
 macro_rules! editor_callback {
     ($struct_name:ident,$editor:ident,$markdown_view:ident,$body:block) => {
@@ -66,66 +83,65 @@ macro_rules! editor_callback {
     };
 }
 
-#[wasm_bindgen]
-impl Echo {
-    pub fn callback(&self) {
-        obsidian::Notice::new("dmaxus/obsidian-plugin".into());
-    }
-}
-
-editor_callback!(ParseTask, editor, _mv, {
-    let selection = editor.getSelection();
-    let selection: String = selection.into();
-    if let Some(task) = tasks::Task::from_markdown(&selection) {
-        let json = serde_json::to_string_pretty(&task).unwrap();
-        obsidian::Notice::new(json.into());
-    } else {
-        obsidian::Notice::new("Not a task".into());
-    }
+command!(Info, "plugin info");
+callback!(Info, {
+    obsidian::Notice::new("dmaxus/obsidian-plugin".into());
 });
 
-trait ErgoInto: Sized {
-    fn ergo_into<I: From<Self>>(self) -> I {
-        I::from(self)
-    }
-}
-
-impl<F> ErgoInto for F {}
-
-editor_callback!(ParseFile, _editor, markdown_view, {
-    let file = markdown_view.file();
-    let vault = markdown_view.app().vault();
-
-    let content = vault
-        .read(file)
-        .ergo_into::<JsFuture>()
-        .await
-        .unwrap()
-        .ergo_into::<JsString>();
-
-    obsidian::Notice::new(content);
+command!(EchoSelection, "echo selection");
+editor_callback!(EchoSelection, editor, _mv, {
+    obsidian::Notice::new(editor.getSelection());
 });
 
-command!(Yoink, "yoink!");
-
-editor_callback!(Yoink, _e, mv, {
-    let file = mv.file();
-    let vault = mv.app().vault();
-
-    let content = vault
-        .read(file)
-        .ergo_into::<JsFuture>()
-        .await
-        .unwrap()
-        .ergo_into::<JsString>();
-
-    obsidian::Notice::new(content);
-
+async fn file_to_js_string(vault: &Vault, file: TFile) -> JsString {
     vault
-        .modify(mv.file(), JsString::from(""), None)
+        .read(file)
+        .ergo_into::<JsFuture>()
+        .await
+        .unwrap() // Promise<JsString> implied
+        .ergo_into::<JsString>()
+}
+
+async fn string_to_file(string: String, vault: &Vault, file: TFile) {
+    vault
+        .modify(file, JsString::from(string), None)
         .ergo_into::<JsFuture>()
         .await
         .unwrap();
+}
 
-    obsidian::Notice::new(JsString::from("yoinked!"));
+fn format_string(string: &str) -> String {
+    format_string_with(string, identity)
+}
+
+fn format_string_with<'a, F, I>(string: &'a str, f: F) -> String
+where
+    F: Fn(Parser<'a>) -> I,
+    I: IntoIterator<Item = Event<'a>>,
+{
+    let parser = pulldown_cmark::Parser::new_ext(string, Options::ENABLE_TASKLISTS);
+
+    let modified = f(parser);
+
+    let mut output = String::new();
+    pulldown_cmark_to_cmark::cmark(modified.into_iter(), &mut output).unwrap();
+    output
+}
+
+command!(Format, "format document");
+editor_callback!(Format, _editor, mv, {
+    let vault = mv.app().vault();
+    let file = mv.file();
+
+    let string = file_to_js_string(&vault, file).await.ergo_into::<String>();
+
+    let formatted = format_string(&string);
+    let formatted_again = format_string(&formatted);
+    if formatted != formatted_again {
+        obsidian::Notice::new("Formatting is not idempotent".into());
+    }
+
+    string_to_file(formatted_again, &vault, mv.file()).await;
+
+    obsidian::Notice::new("Formatted".into());
 });

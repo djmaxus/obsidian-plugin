@@ -1,18 +1,21 @@
 mod commands;
 mod obsidian;
-mod tasks;
+mod todo_list;
 
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn onload(plugin: &obsidian::Plugin) {
-    macro_rules! add_command {
+    macro_rules! add_commands {
+        () => {};
         ($command:ident) => {
             plugin.addCommand(JsValue::from(commands::$command::default()));
         };
+        ($command:ident, $( $other_command:ident ),*) => {
+            add_commands! {$command}
+            add_commands! {$( $other_command ),*}
+        };
     }
-    add_command!(Echo);
-    add_command!(ParseTask);
-    add_command!(ParseFile);
-    add_command!(Yoink);
+
+    add_commands![Info, Format, EchoSelection];
 }

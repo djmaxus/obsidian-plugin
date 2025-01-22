@@ -1,4 +1,4 @@
- ## Inbox
+## Inbox
 
-- [ ] rename the project
-- [ ] add license (MIT+APACHE)
+* [ ] rename the project
+* [ ] add license (MIT+APACHE)
