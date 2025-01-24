@@ -59,7 +59,7 @@ macro_rules! callback {
     ($struct_name:ident,$body:block) => {
         #[wasm_bindgen]
         impl $struct_name {
-            #[wasm_bindgen(js_name = editorCallback)]
+            #[wasm_bindgen]
             pub async fn callback(&self) {
                 $body
             }
